@@ -3,9 +3,29 @@
 #include <string.h>
 #include <unistd.h>
 
+// Hash functions
 char* sha256file(char* file);
 char* hashToString(char* hash);
 void blobFile(char* file);
+
+// List functions (from liste.c)
+typedef struct cell {
+    char* data;
+    struct cell* next;
+} Cell;
+
+typedef Cell* List;
+
+List* initList();
+Cell* buildCell(char* ch);
+void insertFirst(List* L, Cell* C);
+char* ctos(Cell* c);
+char* ltos(List* L);
+Cell* listGet(List* L, int i);
+Cell* searchList(List* L, char* str);
+List* stol(char* s);
+void ltof(List* l, char* path);
+List* ftol(char* path);
 
 int main() {
     printf("====== Testing Hash Functions ======\n\n");
@@ -106,6 +126,173 @@ int main() {
         printf("Cleaned up test file.\n");
     }
 
-    printf("====== Testing Complete ======\n");
+    printf("====== Testing Complete ======\n\n");
+    
+    // ============================================
+    // TESTING LIST FUNCTIONS FROM liste.c
+    // ============================================
+    printf("\n====== Testing List Functions ======\n\n");
+
+    // Test 1: initList and insertFirst
+    printf("Test 1: initList() and insertFirst()\n");
+    printf("------------------------\n");
+    List* myList = initList();
+    printf("Created empty list\n");
+    
+    insertFirst(myList, buildCell("Alice"));
+    insertFirst(myList, buildCell("Bob"));
+    insertFirst(myList, buildCell("Charlie"));
+    printf("Inserted 3 elements: Alice, Bob, Charlie\n");
+    
+    char* result_str = ltos(myList);
+    printf("List content (ltos): %s\n", result_str);
+    printf("Note: Order is reversed due to insertFirst() adding to head\n");
+    free(result_str);
+    printf("\n");
+
+    // Test 2: listGet function
+    printf("Test 2: listGet()\n");
+    printf("------------------------\n");
+    Cell* cell0 = listGet(myList, 0);
+    Cell* cell1 = listGet(myList, 1);
+    Cell* cell2 = listGet(myList, 2);
+    Cell* cell3 = listGet(myList, 3);
+    
+    printf("Cell at index 0: %s\n", cell0 != NULL ? cell0->data : "NULL");
+    printf("Cell at index 1: %s\n", cell1 != NULL ? cell1->data : "NULL");
+    printf("Cell at index 2: %s\n", cell2 != NULL ? cell2->data : "NULL");
+    printf("Cell at index 3 (out of bounds): %s\n", cell3 != NULL ? cell3->data : "NULL");
+    printf("\n");
+
+    // Test 3: searchList function
+    printf("Test 3: searchList()\n");
+    printf("------------------------\n");
+    Cell* search1 = searchList(myList, "Bob");
+    Cell* search2 = searchList(myList, "David");
+    
+    printf("Search for 'Bob': %s\n", search1 != NULL ? "FOUND" : "NOT FOUND");
+    printf("Search for 'David': %s\n", search2 != NULL ? "FOUND" : "NOT FOUND");
+    printf("\n");
+
+    // Test 4: ctos function
+    printf("Test 4: ctos()\n");
+    printf("------------------------\n");
+    Cell* single_cell = buildCell("TestData");
+    printf("Cell data via ctos: %s\n", ctos(single_cell));
+    printf("NULL cell via ctos: %s\n", ctos(NULL) != NULL ? "DATA" : "NULL");
+    free(single_cell->data);
+    free(single_cell);
+    printf("\n");
+
+    // Test 5: ltos function (list to string)
+    printf("Test 5: ltos()\n");
+    printf("------------------------\n");
+    char* list_str = ltos(myList);
+    printf("List as pipe-separated string: '%s'\n", list_str);
+    free(list_str);
+    
+    // Test with empty list
+    List* emptyList = initList();
+    char* empty_str = ltos(emptyList);
+    printf("Empty list as string: '%s' (length: %lu)\n", empty_str, strlen(empty_str));
+    free(empty_str);
+    printf("\n");
+
+    // Test 6: stol function (string to list) - BUG WARNING
+    printf("Test 6: stol() - STRING TO LIST CONVERSION\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: stol() uses strtok() which modifies input string\n");
+    printf("⚠️  Solution: Make a copy of input string before calling stol()\n");
+    
+    char test_str[] = "apple|banana|cherry|date";  // Must be modifiable array
+    printf("Input string: %s\n", test_str);
+    
+    List* newList = stol(test_str);
+    char* new_list_str = ltos(newList);
+    printf("Resulting list: %s\n", new_list_str);
+    printf("Note: Order may differ due to insertFirst() + strtok() behavior\n");
+    free(new_list_str);
+    printf("\n");
+
+    // Test 7: ltof function (list to file) - BUG WARNING
+    printf("Test 7: ltof() - LIST TO FILE\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: ltof() doesn't return/exit after fopen error\n");
+    printf("⚠️  This causes fclose(NULL) which is undefined behavior\n");
+    
+    char* filepath = "test_list.txt";
+    // Create a list
+    List* fileList = initList();
+    insertFirst(fileList, buildCell("red"));
+    insertFirst(fileList, buildCell("green"));
+    insertFirst(fileList, buildCell("blue"));
+    
+    printf("Writing list to file: %s\n", filepath);
+    ltof(fileList, filepath);
+    printf("Write operation completed\n");
+    printf("\n");
+
+    // Test 8: ftol function (file to list) - BUG WARNING
+    printf("Test 8: ftol() - FILE TO LIST\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: fgets() includes newline character '\\n'\n");
+    printf("⚠️  This causes incorrect parsing of last element\n");
+    
+    List* readList = ftol(filepath);
+    if (readList != NULL) {
+        char* read_str = ltos(readList);
+        printf("Read from file: '%s'\n", read_str);
+        printf("Note: Newline character may be included in last element\n");
+        free(read_str);
+    }
+    printf("\n");
+
+    // Test 9: Edge cases and error conditions
+    printf("Test 9: Edge Cases\n");
+    printf("------------------------\n");
+    
+    // Empty string to list
+    List* test_empty = initList();
+    char empty_input[] = "";
+    List* empty_result = stol(empty_input);
+    printf("stol(\"\") result: '%s'\n", ltos(empty_result));
+    free(ltos(empty_result));
+    
+    // Single element
+    List* test_single = initList();
+    char single_input[] = "single";
+    List* single_result = stol(single_input);
+    printf("stol(\"single\") result: '%s'\n", ltos(single_result));
+    free(ltos(single_result));
+    printf("\n");
+
+    // Test 10: File I/O error handling
+    printf("Test 10: File I/O Error Handling\n");
+    printf("------------------------\n");
+    
+    // Try to read from non-existent file
+    printf("Attempting to read non-existent file...\n");
+    List* error_list = ftol("/path/that/does/not/exist.txt");
+    printf("Result: %s\n", error_list == NULL ? "NULL (error caught)" : "UNEXPECTED");
+    printf("\n");
+
+    // Cleanup test files
+    printf("Cleaning up test files...\n");
+    if (access(filepath, F_OK) == 0) {
+        remove(filepath);
+        printf("Removed %s\n", filepath);
+    }
+    printf("\n");
+
+    // Summary of bugs found
+    printf("====== BUG SUMMARY ======\n");
+    printf("1. ltof() BUG: No return after fopen error - causes fclose(NULL)\n");
+    printf("2. stol() BUG: Uses strtok() which modifies input string\n");
+    printf("3. ftol() BUG: fgets() includes newline, causes parse errors\n");
+    printf("4. stol() DESIGN: insertFirst() reverses element order\n");
+    printf("\n");
+
+    printf("====== All Tests Complete ======\n");
+    
     return 0;
 }
