@@ -20,7 +20,7 @@ int fd = mkstemp(fname); //creation du fichier temporaire retourne -1 en cas d e
         return NULL;
  }
     close(fd);
-    char cmd[1024]
+    char cmd[1024];
     sprintf(cmd, "cat %s | sha256sum > %s", file, fname);
 
     if (system(cmd) != 0) 
@@ -62,7 +62,9 @@ int fd = mkstemp(fname); //creation du fichier temporaire retourne -1 en cas d e
 
 char* hashToString(char* hash){
     // convertir un hash en chemain en inserant un "/" entre le 2eme et le 3eme caractere
-    if (&hash != NULL && strlen(hash) >= 3)
+    // BUG FIX: Changed &hash to hash - &hash always points to valid memory location on stack
+    // We need to check if the pointer itself is NULL, not its address
+    if (hash != NULL && strlen(hash) >= 3)
     {
         char* path = malloc(strlen(hash) + 2); 
         for (size_t i = 0; i < 2; i++)
