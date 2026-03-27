@@ -16,12 +16,9 @@ List* initList() {
 }
 Cell* buildCell(char* ch) {
     Cell* c = (Cell*) malloc(sizeof(Cell));
-    
     c->data = (char*) malloc(strlen(ch) + 1);
     strcpy(c->data, ch);
-
     c->next = NULL;
-
     return c;
 }
 void insertFirst(List* L, Cell* C) 
@@ -31,7 +28,8 @@ void insertFirst(List* L, Cell* C)
 }
 char* ctos(Cell* c) 
 {
-    if (c == NULL) return NULL;
+    if (c == NULL) 
+    return NULL;
     return c->data;
 }
 
