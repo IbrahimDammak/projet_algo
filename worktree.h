@@ -3,6 +3,8 @@
 
 #include "workfile.h"
 
+#define WORKTREE_MAX_SIZE 100
+
 // WorkTree structure representing the current working tree
 // Contains an array of WorkFile entries
 typedef struct {
