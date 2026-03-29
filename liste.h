@@ -21,4 +21,9 @@ List* stol(char* s);
 void ltof(List* l, char* path);
 List* ftol(char* path);
 
+// Helper function to completely free a list and all its nodes
+// Parameters: L - pointer to the list to free
+// Returns: void
+void freeList(List* L);
+
 #endif
