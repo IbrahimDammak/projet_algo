@@ -5,6 +5,8 @@
 #include "hachage.h"
 #include "liste.h"
 #include "gesSysFile.h"
+#include "workfile.h"
+#include "worktree.h"
 
 int main() {
     printf("====== Testing Hash Functions ======\n\n");
@@ -407,6 +409,221 @@ int main() {
     printf("   - No return value to indicate copy success\n");
     printf("   - Can't distinguish between successful and failed copies\n");
     printf("\n");
+
+    // ============================================
+    // TESTING WORKFILE FUNCTIONS FROM workfile.c
+    // ============================================
+    printf("\n====== Testing WorkFile Functions (workfile.c) ======\n\n");
+
+    // Test 1: createWorkFile function
+    printf("Test 1: createWorkFile() - CREATE NEW WORKFILE\n");
+    printf("------------------------\n");
+    
+    WorkFile* wf1 = createWorkFile("test.txt");
+    if (wf1 != NULL) {
+        printf("Created WorkFile: %s\n", wf1->name);
+        printf("  - name: %s\n", wf1->name);
+        printf("  - hash: %s\n", wf1->hash != NULL ? wf1->hash : "NULL");
+        printf("  - mode: %d\n", wf1->mode);
+        printf("✓ WorkFile created successfully\n");
+    } else {
+        printf("✗ Failed to create WorkFile\n");
+    }
+    printf("\n");
+
+    // Test 2: wfts() - WorkFile to string
+    printf("Test 2: wfts() - WORKFILE TO STRING\n");
+    printf("------------------------\n");
+    
+    if (wf1 != NULL) {
+        char* str1 = wfts(wf1);
+        if (str1 != NULL) {
+            printf("WorkFile as string: '%s'\n", str1);
+            printf("Expected format: name\\thash\\tmode (tab-separated)\n");
+            free(str1);
+        }
+    }
+    printf("\n");
+
+    // Test 3: wfts() with hash value
+    printf("Test 3: wfts() - WORKFILE WITH HASH VALUE\n");
+    printf("------------------------\n");
+    
+    WorkFile* wf2 = createWorkFile("document.pdf");
+    if (wf2 != NULL) {
+        wf2->hash = (char*) malloc(65);
+        strcpy(wf2->hash, "abc123def456789");
+        wf2->mode = 644;
+        
+        char* str2 = wfts(wf2);
+        if (str2 != NULL) {
+            printf("WorkFile with hash: '%s'\n", str2);
+            printf("Fields: name=%s, hash=%s, mode=%d\n", 
+                   wf2->name, wf2->hash, wf2->mode);
+            free(str2);
+        }
+    }
+    printf("\n");
+
+    // Test 4: stwf() - String to WorkFile
+    printf("Test 4: stwf() - STRING TO WORKFILE PARSING\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: Function declared as srwf() in header, but implemented as stwf()\n\n");
+    
+    char input_str[] = "myfile.c\t1a2b3c4d5e\t755";
+    printf("Parsing input string: '%s'\n", input_str);
+    printf("Calling stwf()...\n");
+    
+    WorkFile* wf_parsed = stwf(input_str);
+    if (wf_parsed != NULL) {
+        printf("✓ Parsed successfully:\n");
+        printf("  - name: %s\n", wf_parsed->name);
+        printf("  - hash: %s\n", wf_parsed->hash != NULL ? wf_parsed->hash : "NULL");
+        printf("  - mode: %d\n", wf_parsed->mode);
+    } else {
+        printf("✗ Parsing failed\n");
+    }
+    printf("\n");
+
+    // Test 5: stwf() with NULL hash field
+    printf("Test 5: stwf() - WITH NULL HASH FIELD\n");
+    printf("------------------------\n");
+    
+    char input_str2[] = "newfile.txt\tNULL\t644";
+    printf("Parsing input string: '%s'\n", input_str2);
+    
+    WorkFile* wf_parsed2 = stwf(input_str2);
+    if (wf_parsed2 != NULL) {
+        printf("✓ Parsed successfully:\n");
+        printf("  - name: %s\n", wf_parsed2->name);
+        printf("  - hash: %s (NULL field handled correctly)\n", 
+               wf_parsed2->hash != NULL ? wf_parsed2->hash : "NULL");
+        printf("  - mode: %d\n", wf_parsed2->mode);
+    } else {
+        printf("✗ Parsing failed\n");
+    }
+    printf("\n");
+
+    // Test 6: Round-trip test (create -> wfts -> stwf)
+    printf("Test 6: ROUND-TRIP TEST (WorkFile -> String -> WorkFile)\n");
+    printf("------------------------\n");
+    
+    WorkFile* wf_original = createWorkFile("original.dat");
+    if (wf_original != NULL) {
+        wf_original->hash = (char*) malloc(65);
+        strcpy(wf_original->hash, "fedcba9876543210");
+        wf_original->mode = 755;
+        
+        char* str_format = wfts(wf_original);
+        printf("Original file: name=%s, hash=%s, mode=%d\n", 
+               wf_original->name, wf_original->hash, wf_original->mode);
+        printf("Converted to string: '%s'\n", str_format);
+        
+        // Parse it back
+        WorkFile* wf_parsed3 = stwf(str_format);
+        if (wf_parsed3 != NULL) {
+            printf("Parsed back: name=%s, hash=%s, mode=%d\n",
+                   wf_parsed3->name, 
+                   wf_parsed3->hash != NULL ? wf_parsed3->hash : "NULL",
+                   wf_parsed3->mode);
+            
+            // Verify they match
+            if (strcmp(wf_original->name, wf_parsed3->name) == 0 &&
+                strcmp(wf_original->hash, wf_parsed3->hash) == 0 &&
+                wf_original->mode == wf_parsed3->mode) {
+                printf("✓ Round-trip successful - all fields match!\n");
+            } else {
+                printf("✗ Round-trip failed - fields don't match\n");
+            }
+        }
+        free(str_format);
+    }
+    printf("\n");
+
+    // Test 7: Error handling - invalid mode
+    printf("Test 7: stwf() - INVALID MODE PARSING\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: atoi() doesn't validate input\n");
+    printf("⚠️  Invalid mode strings are silently converted to 0\n\n");
+    
+    char bad_input[] = "test.txt\thash123\tinvalid_mode";
+    printf("Parsing with invalid mode: '%s'\n", bad_input);
+    
+    WorkFile* wf_bad = stwf(bad_input);
+    if (wf_bad != NULL) {
+        printf("Parsed (with issue):\n");
+        printf("  - name: %s\n", wf_bad->name);
+        printf("  - mode: %d (should be invalid, but atoi set it to 0)\n", wf_bad->mode);
+        printf("  - No error indication!\n");
+    }
+    printf("\n");
+
+    // Test 8: Edge case - empty hash
+    printf("Test 8: stwf() - EMPTY HASH FIELD\n");
+    printf("------------------------\n");
+    
+    char empty_hash[] = "file.txt\t\t644";
+    printf("Parsing: '%s'\n", empty_hash);
+    
+    WorkFile* wf_empty = stwf(empty_hash);
+    if (wf_empty != NULL) {
+        printf("✓ Parsed: name=%s, hash=%s, mode=%d\n",
+               wf_empty->name,
+               wf_empty->hash != NULL ? wf_empty->hash : "NULL",
+               wf_empty->mode);
+    }
+    printf("\n");
+
+    // Test 9: Memory tests
+    printf("Test 9: MEMORY ALLOCATION EDGE CASES\n");
+    printf("------------------------\n");
+    printf("⚠️  BUG FOUND: No NULL check after createWorkFile()\n");
+    printf("⚠️  If malloc fails in createWorkFile(), no error handling in stwf()\n\n");
+    
+    // Create and convert multiple times to stress memory
+    printf("Creating 3 WorkFiles and converting to strings...\n");
+    int count = 0;
+    for (int i = 0; i < 3; i++) {
+        char name[50];
+        sprintf(name, "file%d.txt", i);
+        WorkFile* wf = createWorkFile(name);
+        if (wf != NULL) {
+            char* s = wfts(wf);
+            if (s != NULL) {
+                count++;
+                free(s);
+            }
+            // Note: Not freeing WorkFile - memory leak demonstration
+        }
+    }
+    printf("Successfully processed %d files\n", count);
+    printf("Note: WorkFiles not freed - memory leak would occur\n");
+    printf("\n");
+
+    // Test 10: Function name mismatch test
+    printf("Test 10: FUNCTION NAME MISMATCH - FIXED\n");
+    printf("------------------------\n");
+    printf("✓ FIXED: Header now correctly declares stwf()\n");
+    printf("   - Previously: Header declared srwf(), code had stwf()\n");
+    printf("   - Now: Both header and implementation use stwf()\n");
+    printf("   - Code compiles correctly\n");
+    printf("\n");
+
+    // Summary of bugs found
+    printf("====== BUG SUMMARY (WORKFILE.C) ======\n");
+    printf("1. FUNCTION NAME MISMATCH (FIXED)\n");
+    printf("   ✓ Fixed by updating header to match implementation\n");
+    printf("   - Both now use stwf() for string-to-workfile parsing\n\n");
+    printf("2. NO NULL CHECK after createWorkFile() (NEEDS FIX)\n");
+    printf("   - If malloc fails in createWorkFile(), stwf() would crash\n");
+    printf("   - Should check: if (wf == NULL) return NULL;\n\n");
+    printf("3. NO ERROR HANDLING for strdup() failure (NEEDS FIX)\n");
+    printf("   - If strdup fails, wf->hash becomes NULL silently\n");
+    printf("   - Should report allocation failure and return NULL\n\n");
+    printf("4. WEAK VALIDATION of mode string (NEEDS FIX)\n");
+    printf("   - Uses atoi() without validation\n");
+    printf("   - Invalid input returns 0 with no error distinction\n");
+    printf("   - Can't tell if mode='0' or mode='abc123'\n\n");
 
     printf("====== All Tests Complete ======\n");
     

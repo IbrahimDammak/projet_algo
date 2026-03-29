@@ -2,11 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "workfile.h"
-typedef struct {
-    char* name;
-    char* hash;
-    int mode;
-} WorkFile;
+
 WorkFile* createWorkFile(char* name) {
     // 65. Allouer la structure
     WorkFile* wf = (WorkFile*) malloc(sizeof(WorkFile));
@@ -48,22 +44,41 @@ WorkFile* stwf(char* ch) {
 
     // 75. créer le WorkFile
     WorkFile* wf = createWorkFile(name);
+    // BUG FIX: Missing NULL check after createWorkFile()
+    // If malloc fails in createWorkFile(), wf could be NULL
+    // This line would crash: wf->hash = ...
+    if (wf == NULL) {
+        free(copy);
+        return NULL;
+    }
 
     // gérer hash
     if (hash != NULL && strcmp(hash, "NULL") != 0) {
+        // BUG FIX: No error check for strdup() failure
+        // If malloc fails in strdup(), wf->hash becomes NULL silently
         wf->hash = strdup(hash);
+        if (wf->hash == NULL) {
+            // strdup failed - memory problem, but we continue anyway
+            // This could indicate a serious system problem
+            fprintf(stderr, "Warning: strdup() failed for hash\n");
+        }
     } else {
         wf->hash = NULL;
     }
 
     // convertir mode
+    // BUG FIX: atoi() returns 0 for invalid input with no error indication
+    // We can't distinguish between valid mode 0 and "invalid_mode" string
     wf->mode = atoi(modeStr);
+    if (wf->mode == 0 && strcmp(modeStr, "0") != 0) {
+        fprintf(stderr, "Warning: Invalid mode value '%s', defaulting to 0\n", modeStr);
+    }
 
     // 76. libérer la copie
     free(copy);
 
     return wf;
-
+}
 /*
 Format attendu : name\thash\tmode (champs séparés par tabulation).
 69.	Calculer la taille nécessaire : strlen(name) + strlen(hash) + longueur de mode en texte + 3 (tabulations + '\0').
