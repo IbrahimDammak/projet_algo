@@ -159,3 +159,19 @@ List* ftol(char* path){
     List* L = stol(buffer);  // Convert string to list (parse pipe-separated values)
     return L;  // Return the newly created list
 }
+
+// Helper function to completely free a list and all its nodes
+// Parameters: L - pointer to the list to free
+// Returns: void
+void freeList(List* L) {
+    if (L == NULL) return;  // Handle NULL pointer
+    
+    Cell* curr = *L;
+    while (curr != NULL) {
+        Cell* next = curr->next;  // Save next pointer before freeing
+        free(curr->data);          // Free the data string
+        free(curr);                // Free the cell structure
+        curr = next;               // Move to next cell
+    }
+    free(L);  // Free the list pointer itself
+}

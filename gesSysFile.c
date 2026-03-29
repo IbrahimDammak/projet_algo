@@ -3,10 +3,7 @@
 #include <string.h>
 #include <dirent.h>
 #include "liste.h"
-
-List* listdir(char* root_dir);
-int file_exists(char* file);
-void cp(char* to, char* from);
+#include "gesSysFile.h"
 
 
 void cp(char* to, char* from) {
@@ -24,6 +21,9 @@ void cp(char* to, char* from) {
     }
 
     char buffer[1024];  // taille maximale d'une ligne
+    // BUG NOTE: cp() doesn't report success or failure
+    // Users can't know if copy completed successfully
+    // Consider returning int (1 = success, 0 = failure) for better error handling
     while (fgets(buffer, sizeof(buffer), src) != NULL) {
         fputs(buffer, dst);
     }
@@ -71,7 +71,9 @@ int file_exists(char* file) {
         return 0; // Could not read directory, assume file does not exist
     }
     Cell* found = searchList(files, file);
-    free(files); // Free the list after searching
+    // BUG FIX: Use freeList() instead of just free(files)
+    // free(files) only freed the List structure, not the Cell nodes and their data strings
+    freeList(files);  // Properly free all cells and data
     return found != NULL ? 1 : 0; // Return 1 if found, 0 if not
 }
 
