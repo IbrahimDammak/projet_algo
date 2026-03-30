@@ -22,6 +22,6 @@ char* wfts(WorkFile* wf);
 // Parse a string to create a WorkFile
 // Parameters: ch - string containing WorkFile data
 // Returns: pointer to a new WorkFile parsed from the string
-WorkFile* srwf(char* ch);
+WorkFile* stwf(char* ch);
 
 #endif
