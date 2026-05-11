@@ -65,9 +65,72 @@ static int execMkdir(const char* path) {
     return system(cmd) == 0 ? 0 : -1;
 }
 
+char* saveWorkTree(WorkTree* wt, char* path) {
+    if (wt == NULL || path == NULL) {
+        return NULL;
+    }
 
+    for (int i = 0; i < wt->n; i++) {
+        WorkFile* wf = &wt->tab[i];
+        char* full_path = constructPath(path, wf->name);
+        if (full_path == NULL) {
+            return NULL;
+        }
 
+        struct stat st;
+        if (stat(full_path, &st) == -1) {
+            free(full_path);
+            return NULL;
+        }
 
+        if (S_ISREG(st.st_mode)) {
+            blobFile(full_path);
+            char* hash = sha256file(full_path);
+            if (hash == NULL) {
+                free(full_path);
+                return NULL;
+            }
+            wf->hash = hash;
+            wf->mode = st.st_mode & 0777;
+        } else if (S_ISDIR(st.st_mode)) {
+            List* dir_list = listdir(full_path);
+            if (dir_list == NULL) {
+                free(full_path);
+                return NULL;
+            }
+
+            WorkTree* new_wt = initWorkTree();
+            if (new_wt == NULL) {
+                freeList(dir_list);
+                free(full_path);
+                return NULL;
+            }
+
+            Cell* curr = *dir_list;
+            while (curr != NULL) {
+                appendWorkTree(new_wt, curr->data, "NULL", 0);
+                curr = curr->next;
+            }
+
+            char* hash = saveWorkTree(new_wt, full_path);
+            if (hash == NULL) {
+                free(new_wt);
+                freeList(dir_list);
+                free(full_path);
+                return NULL;
+            }
+
+            wf->hash = hash;
+            wf->mode = st.st_mode & 0777;
+            free(new_wt);
+            freeList(dir_list);
+        }
+
+        free(full_path);
+    }
+
+    return blobWorkTree(wt);
+}
 
 char* blobWorkTree(WorkTree* wt) {
     if (wt == NULL) {
@@ -123,7 +186,6 @@ char* blobWorkTree(WorkTree* wt) {
     return hash;  // Return the hash of the stored WorkTree blob (caller must free this string)
 }
  
-
 
 
 void restoreWorkTree(WorkTree* wt, char* path) {
