@@ -167,9 +167,9 @@ char* blobWorkTree(WorkTree* wt) {
         return NULL;
     }
 
-    // Create blob directory (first 2 chars of hash)
-    char blob_dir[3];  // 2 chars + null terminator
-    snprintf(blob_dir, sizeof(blob_dir), "%.*s", 2, hash);
+    // FIX: Store WorkTree blobs under .git/objects/ like regular blobs.
+    char blob_dir[256];
+    snprintf(blob_dir, sizeof(blob_dir), ".git/objects/%.*s", 2, hash);
     if (execMkdir(blob_dir) != 0) {
         fprintf(stderr, "Error: Failed to create blob directory\n");
         free(hash);
@@ -178,10 +178,18 @@ char* blobWorkTree(WorkTree* wt) {
         return NULL;
     }
 
-    // Copy temporary file to blob location using existing cp() function
-    cp(dest_path, fname);
+    // FIX: Copy the temporary WorkTree blob into the .git/objects path.
+    char* blob_path = constructPath(blob_dir, dest_path);
+    if (blob_path == NULL) {
+        free(hash);
+        free(dest_path);
+        unlink(fname);
+        return NULL;
+    }
+    cp(blob_path, fname);
 
     unlink(fname);  // Remove the temporary file
+    free(blob_path);
     free(dest_path);  // Free allocated memory for destination path
     return hash;  // Return the hash of the stored WorkTree blob (caller must free this string)
 }
@@ -196,7 +204,7 @@ void restoreWorkTree(WorkTree* wt, char* path) {
 
     for (int i = 0; i < wt->n; i++) {  // Loop through each WorkFile in the WorkTree
         WorkFile* wf = &wt->tab[i];  // Get pointer to current WorkFile
-        char* snapshot_path = hashToString(wf->hash);  // Get path to the snapshot file from hash
+        char* snapshot_path = hashToPath(wf->hash);  // Get path to the snapshot file from hash
         if (snapshot_path == NULL) {
             fprintf(stderr, "Error: Invalid hash for WorkFile '%s'\n", wf->name);
             continue;  // Skip this entry on error
@@ -209,9 +217,12 @@ void restoreWorkTree(WorkTree* wt, char* path) {
             continue;
         }
 
-        if (strstr(snapshot_path, ".t") == NULL) {  // Check if it's a regular file (no ".t" extension)
+        // FIX: Only treat paths that end with ".t" as trees, not any path containing ".t".
+        size_t snapshot_len = strlen(snapshot_path);
+        if (snapshot_len < 2 || strcmp(snapshot_path + snapshot_len - 2, ".t") != 0) {
             cp(dest_path, snapshot_path);  // Copy the file from snapshot to destination
-            setMode(wf->mode, dest_path);  // Set the file permissions
+            // FIX: Use chmod() directly because setMode() is not defined in this project.
+            chmod(dest_path, wf->mode);  // Set the file permissions
         } else {  // It's a directory (has ".t" extension)
             WorkTree* sub_wt = ftwt(snapshot_path);  // Reconstruct the WorkTree for the subdirectory
             if (sub_wt) {

@@ -11,33 +11,34 @@
 int main() {
     printf("====== Testing Hash Functions ======\n\n");
 
-    // Test 1: hashToString function
-    printf("Test 1: hashToString()\n");
+    // FIX: Updated the test harness to use the canonical hashToPath name.
+    // Test 1: hashToPath function
+    printf("Test 1: hashToPath()\n");
     printf("------------------------\n");
     
     char* test_hash1 = "abc123def456";
-    char* result1 = hashToString(test_hash1);
+    char* result1 = hashToPath(test_hash1);
     if (result1 != NULL) {
         printf("Input hash:  %s\n", test_hash1);
         printf("Output path: %s\n", result1);
         free(result1);
     } else {
-        printf("hashToString returned NULL\n");
+        printf("hashToPath returned NULL\n");
     }
     printf("\n");
 
-    // Test 2: hashToString with different hash
-    printf("Test 2: hashToString() with another hash\n");
+    // Test 2: hashToPath with different hash
+    printf("Test 2: hashToPath() with another hash\n");
     printf("------------------------\n");
     
     char* test_hash2 = "fe1234567890abcdef";
-    char* result2 = hashToString(test_hash2);
+    char* result2 = hashToPath(test_hash2);
     if (result2 != NULL) {
         printf("Input hash:  %s\n", test_hash2);
         printf("Output path: %s\n", result2);
         free(result2);
     } else {
-        printf("hashToString returned NULL\n");
+        printf("hashToPath returned NULL\n");
     }
     printf("\n");
 
@@ -60,31 +61,31 @@ int main() {
         printf("Failed to create test file\n");
     }
 
-    // Test 4: hashToString with short hash (edge case)
-    printf("Test 4: hashToString() with short hash (edge case)\n");
+    // Test 4: hashToPath with short hash (edge case)
+    printf("Test 4: hashToPath() with short hash (edge case)\n");
     printf("------------------------\n");
     
     char* test_hash3 = "ab";
-    char* result3 = hashToString(test_hash3);
+    char* result3 = hashToPath(test_hash3);
     if (result3 != NULL) {
         printf("Input hash:  %s\n", test_hash3);
         printf("Output path: %s\n", result3);
         free(result3);
     } else {
-        printf("hashToString returned NULL (expected for hash < 3 chars)\n");
+        printf("hashToPath returned NULL (expected for hash < 3 chars)\n");
     }
     printf("\n");
 
-    // Test 5: hashToString with NULL pointer (edge case)
-    printf("Test 5: hashToString() with NULL pointer (edge case)\n");
+    // Test 5: hashToPath with NULL pointer (edge case)
+    printf("Test 5: hashToPath() with NULL pointer (edge case)\n");
     printf("------------------------\n");
     // BUG FIX: Now that we've fixed the pointer check, NULL is properly handled
-    char* result4 = hashToString(NULL);
+    char* result4 = hashToPath(NULL);
     if (result4 != NULL) {
         printf("Output: %s\n", result4);
         free(result4);
     } else {
-        printf("hashToString returned NULL (expected for NULL input)\n");
+        printf("hashToPath returned NULL (expected for NULL input)\n");
     }
     printf("\n");
 

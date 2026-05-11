@@ -5,6 +5,29 @@
 #include "hachage.h"
 
 
+int hashFile(char* source, char* dest){
+    // FIX: Reuse the SHA256 helper and persist the hash string into the destination file.
+    char* hash = sha256file(source);
+    if (hash == NULL || dest == NULL)
+    {
+        free(hash);
+        return -1;
+    }
+
+    FILE* f = fopen(dest, "w");
+    if (f == NULL)
+    {
+        perror("fopen");
+        free(hash);
+        return -1;
+    }
+
+    fprintf(f, "%s", hash);
+    fclose(f);
+    free(hash);
+    return 0;
+}
+
 
 
 char* sha256file(char* file){
@@ -57,7 +80,7 @@ int fd = mkstemp(fname); //creation du fichier temporaire retourne -1 en cas d e
 }
 
 
-char* hashToString(char* hash){
+char* hashToPath(char* hash){
     // convertir un hash en chemain en inserant un "/" entre le 2eme et le 3eme caractere
     // BUG FIX: Changed &hash to hash - &hash always points to valid memory location on stack
     // We need to check if the pointer itself is NULL, not its address
@@ -82,7 +105,7 @@ char* hashToString(char* hash){
 
 void blobFile(char* file){
     char* hash = sha256file(file);
-    char* path = hashToString(hash);
+    char* path = hashToPath(hash);
     if (path != NULL){
         char parentPath[2];
         char commande[256];

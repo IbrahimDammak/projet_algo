@@ -38,7 +38,7 @@ int inWorkTree(WorkTree* wt, char* name) {
 }
 
 int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
-    if (!wt || !name || !hash) {
+    if (!wt || !name) {
         return -1;
     }
 
@@ -56,12 +56,16 @@ int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
     }
     strcpy(nameCopy, name);
 
-    char* hashCopy = malloc(strlen(hash) + 1);
-    if (!hashCopy) {
-        free(nameCopy);
-        return -1;
+    // FIX: Allow WorkFiles to start with a NULL hash and store NULL directly.
+    char* hashCopy = NULL;
+    if (hash != NULL) {
+        hashCopy = malloc(strlen(hash) + 1);
+        if (!hashCopy) {
+            free(nameCopy);
+            return -1;
+        }
+        strcpy(hashCopy, hash);
     }
-    strcpy(hashCopy, hash);
 
     wt->tab[wt->n].name = nameCopy;
     wt->tab[wt->n].hash = hashCopy;
